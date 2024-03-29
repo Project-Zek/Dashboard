@@ -1,0 +1,42 @@
+<.header>
+  Listing Galleries
+  <:actions>
+    <.link patch={~p"/galleries/new"}>
+      <.button>New Gallery</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table
+  id="galleries"
+  rows={@streams.galleries}
+  row_click={fn {_id, gallery} -> JS.navigate(~p"/galleries/#{gallery}") end}
+>
+  <:col :let={{_id, gallery}} label="Name"><%= gallery.name %></:col>
+  <:col :let={{_id, gallery}} label="Character data"><%= gallery.character_data_id %></:col>
+  <:action :let={{_id, gallery}}>
+    <div class="sr-only">
+      <.link navigate={~p"/galleries/#{gallery}"}>Show</.link>
+    </div>
+    <.link patch={~p"/galleries/#{gallery}/edit"}>Edit</.link>
+  </:action>
+  <:action :let={{id, gallery}}>
+    <.link
+      phx-click={JS.push("delete", value: %{id: gallery.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+    >
+      Delete
+    </.link>
+  </:action>
+</.table>
+
+<.modal :if={@live_action in [:new, :edit]} id="gallery-modal" show on_cancel={JS.patch(~p"/galleries")}>
+  <.live_component
+    module={ProjectZekWeb.GalleryLive.FormComponent}
+    id={@gallery.id || :new}
+    title={@page_title}
+    action={@live_action}
+    gallery={@gallery}
+    patch={~p"/galleries"}
+  />
+</.modal>

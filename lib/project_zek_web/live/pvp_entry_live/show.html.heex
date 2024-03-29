@@ -1,0 +1,32 @@
+<.header>
+  Pvp entry <%= @pvp_entry.id %>
+  <:subtitle>This is a pvp_entry record from your database.</:subtitle>
+  <:actions>
+    <.link patch={~p"/character_pvp_entries/#{@pvp_entry}/show/edit"} phx-click={JS.push_focus()}>
+      <.button>Edit pvp_entry</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.list>
+  <:item title="Killer"><%= @pvp_entry.killer_id %></:item>
+  <:item title="Killer level"><%= @pvp_entry.killer_level %></:item>
+  <:item title="Victim"><%= @pvp_entry.victim_id %></:item>
+  <:item title="Victim level"><%= @pvp_entry.victim_level %></:item>
+  <:item title="Zone"><%= @pvp_entry.zone_id %></:item>
+  <:item title="Points"><%= @pvp_entry.points %></:item>
+  <:item title="Timestamp"><%= @pvp_entry.timestamp %></:item>
+</.list>
+
+<.back navigate={~p"/character_pvp_entries"}>Back to character_pvp_entries</.back>
+
+<.modal :if={@live_action == :edit} id="pvp_entry-modal" show on_cancel={JS.patch(~p"/character_pvp_entries/#{@pvp_entry}")}>
+  <.live_component
+    module={ProjectZekWeb.PvpEntryLive.FormComponent}
+    id={@pvp_entry.id}
+    title={@page_title}
+    action={@live_action}
+    pvp_entry={@pvp_entry}
+    patch={~p"/character_pvp_entries/#{@pvp_entry}"}
+  />
+</.modal>

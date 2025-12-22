@@ -21,22 +21,12 @@ config :logger, level: :info
 # of environment variables, is done on config/runtime.exs.
 config :project_zek, ProjectZek.Repo,
   username: System.get_env("DB_USER"),
-  password: System.get_env("DB_PASSWORD"),
+  password: System.get_env("DB_PASS"),
   hostname: System.get_env("DB_HOST"),
   database: System.get_env("DB_NAME"),
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
-  config :project_zek, ProjectZekWeb.Endpoint,
-  # Binding to loopback ipv4 address prevents access from other machines.
-  # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {0, 0, 0, 0}, port: 4000],
-  check_origin: false,
-  code_reloader: true,
-  debug_errors: true,
-  secret_key_base: "eu62Nvvln3G5Zs+LTcikpXhKEaE8pRh4yXzmzNUaR6FRUwqpkGh2coCUtBB+yoMf",
-  watchers: [
-    esbuild: {Esbuild, :install_and_run, [:project_zek, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:project_zek, ~w(--watch)]}
-  ]
+# Endpoint, HTTP, SSL, and origins are configured in runtime.exs for prod.
+# Ensure code reloading and dev watchers are disabled in production.

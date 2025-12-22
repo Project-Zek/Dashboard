@@ -20,7 +20,13 @@ defmodule ProjectZekWeb.Router do
   scope "/", ProjectZekWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", HomeLive.Index, :index
+    live "/players", PvpStatLive.Index, :index
+    live "/guilds", GuildLive.Index, :index
+    live "/teams", TeamLive.Index, :index
+    live "/pvp_entries", PvpEntryLive.Index, :index
+    live "/kills", PvpEntryLive.Gallery, :index
+    live "/guilds/:id", GuildLive.Show, :show
   end
 
   # Other scopes may use custom stacks.
@@ -75,8 +81,24 @@ defmodule ProjectZekWeb.Router do
       live "/loginserver/accounts/:id/edit", AccountLive.Index, :edit
       live "/loginserver/accounts/:id/delete", AccountLive.Index, :delete
 
-      live "/character/pvp_kills", PvpEntryLive.Index, :index
-      live "/character/pvp_kills/:id", PvpEntryLive.Show, :show
+      live "/characters", CharacterLive.Index, :index
+      live "/characters/:id", CharacterLive.Show, :show
+      live "/pvp_entries/:id/edit", PvpEntryLive.Edit, :edit
+
+      # Galleries removed
+    end
+  end
+
+  scope "/", ProjectZekWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :superadmin_only,
+      on_mount: [
+        {ProjectZekWeb.UserAuth, :ensure_authenticated},
+        {ProjectZekWeb.SuperadminAuth, :ensure_superadmin}
+      ] do
+      live "/admin/loginserver/accounts", AccountAdminLive.Index, :index
+      live "/admin/banned_ips", BannedIpAdminLive.Index, :index
     end
   end
 

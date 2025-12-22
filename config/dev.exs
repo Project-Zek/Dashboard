@@ -3,7 +3,7 @@ import Config
 # Configure your database
 config :project_zek, ProjectZek.Repo,
   username: System.get_env("DB_USER"),
-  password: System.get_env("DB_PASSWORD"),
+  password: System.get_env("DB_PASS"),
   hostname: System.get_env("DB_HOST"),
   database: System.get_env("DB_NAME"),
   stacktrace: true,
@@ -19,7 +19,7 @@ config :project_zek, ProjectZek.Repo,
 config :project_zek, ProjectZekWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}, port: 4000],
+  http: [ip: {0, 0, 0, 0}, port: 4000],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,

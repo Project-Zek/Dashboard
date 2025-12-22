@@ -11,6 +11,10 @@ config :project_zek,
   ecto_repos: [ProjectZek.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# Waffle (uploads)
+config :waffle,
+  storage: Waffle.Storage.Local
+
 # Configures the endpoint
 config :project_zek, ProjectZekWeb.Endpoint,
   url: [host: "localhost"],
@@ -60,6 +64,12 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Flop (sorting/filtering/pagination)
+config :flop,
+  repo: ProjectZek.Repo,
+  default_limit: 25,
+  max_limit: 100
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -200,14 +200,58 @@ defmodule ProjectZekWeb.UserAuth do
   they use the application at all, here would be a good place.
   """
   def require_authenticated_user(conn, _opts) do
-    if conn.assigns[:current_user] do
-      conn
-    else
-      conn
-      |> put_flash(:error, "You must log in to access this page.")
-      |> maybe_store_return_to()
-      |> redirect(to: ~p"/users/log_in")
-      |> halt()
+    user = conn.assigns[:current_user]
+    ip = get_forwarded_ip(conn)
+    ip_banned? = banned_ip?(ip)
+    cond do
+      ip_banned? ->
+        conn
+        |> put_flash(:error, "Your IP is banned from web access.")
+        |> maybe_store_return_to()
+        |> redirect(to: ~p"/users/log_in")
+        |> halt()
+
+      user && Map.get(user, :banned, false) ->
+        conn
+        |> put_flash(:error, "Your account is banned from web access.")
+        |> maybe_store_return_to()
+        |> redirect(to: ~p"/users/log_in")
+        |> halt()
+
+      user ->
+        conn
+
+      true ->
+        conn
+        |> put_flash(:error, "You must log in to access this page.")
+        |> maybe_store_return_to()
+        |> redirect(to: ~p"/users/log_in")
+        |> halt()
+    end
+  end
+
+  defp get_forwarded_ip(conn) do
+    xf = List.first(get_req_header(conn, "x-forwarded-for"))
+    xr = List.first(get_req_header(conn, "x-real-ip"))
+    ip = xf || xr ||
+      case Tuple.to_list(conn.remote_ip) do
+        [_, _, _, _] = quad -> Enum.join(quad, ".")
+        _ -> nil
+      end
+
+    case ip do
+      nil -> nil
+      v -> v |> String.split(",") |> List.first() |> String.trim()
+    end
+  end
+
+  defp banned_ip?(nil), do: false
+  defp banned_ip?(ip) do
+    import Ecto.Query
+    alias ProjectZek.World.BannedIp
+    case ProjectZek.Repo.one(from b in BannedIp, where: b.ip_address == ^ip, select: 1) do
+      1 -> true
+      _ -> false
     end
   end
 

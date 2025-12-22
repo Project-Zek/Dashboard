@@ -41,7 +41,18 @@ defmodule ProjectZek.Accounts do
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
     user = Repo.get_by(User, email: email)
-    if User.valid_password?(user, password), do: user
+
+    cond do
+      is_nil(user) -> nil
+      not User.valid_password?(user, password) -> nil
+      true ->
+        banned? = ProjectZek.LoginServer.user_has_banned_account?(user) or (Map.get(user, :banned, false) == true)
+        # persist the flag if it changed
+        if function_exported?(Ecto.Changeset, :change, 2) and Map.has_key?(user, :banned) do
+          if user.banned != banned?, do: Repo.update(Ecto.Changeset.change(user, banned: banned?))
+        end
+        if banned?, do: nil, else: user
+    end
   end
 
   @doc """
@@ -91,6 +102,39 @@ defmodule ProjectZek.Accounts do
   """
   def change_user_registration(%User{} = user, attrs \\ %{}) do
     User.registration_changeset(user, attrs, hash_password: false, validate_email: false)
+  end
+
+  @doc """
+  Deletes the web user and all related data, including login server and world accounts.
+
+  Fails with {:error, :banned} if any login server account is banned.
+  """
+  def delete_user_and_related(%User{} = user) do
+    import Ecto.Query
+    alias ProjectZek.LoginServer
+
+    ls_accounts = LoginServer.list_accounts_by_user_id(user.id)
+
+    if Enum.any?(ls_accounts, fn a ->
+         LoginServer.user_has_banned_account?(%User{id: user.id, email: user.email})
+       end) do
+      {:error, :banned}
+    else
+      # Deep delete each LS account
+      with :ok <-
+             Enum.reduce_while(ls_accounts, :ok, fn a, _acc ->
+               case LoginServer.delete_account_deep(a, user) do
+                 {:ok, _} -> {:cont, :ok}
+                 {:error, reason} -> {:halt, {:error, reason}}
+               end
+             end) do
+        # Remove all tokens and the user
+        Repo.transaction(fn ->
+          Repo.delete_all(ProjectZek.Accounts.UserToken.by_user_and_contexts_query(user, :all))
+          Repo.delete(user)
+        end)
+      end
+    end
   end
 
   ## Settings

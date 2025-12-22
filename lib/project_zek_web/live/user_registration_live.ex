@@ -6,19 +6,19 @@ defmodule ProjectZekWeb.UserRegistrationLive do
 
   def render(assigns) do
     ~H"""
-    <div class="mx-auto max-w-sm">
-      <.header class="text-center">
-        Register for an account
-        <:subtitle>
+    <div class="mx-auto max-w-sm text-gray-200">
+      <div class="text-center">
+        <h1 class="text-lg font-semibold leading-8 text-white">Register for an account</h1>
+        <p class="mt-2 text-sm leading-6 text-gray-400">
           Already registered?
-          <.link navigate={~p"/users/log_in"} class="font-semibold text-brand hover:underline">
+          <.link navigate={~p"/users/log_in"} class="font-semibold text-indigo-400 hover:underline">
             Sign in
           </.link>
           to your account now.
-        </:subtitle>
-      </.header>
+        </p>
+      </div>
 
-      <.simple_form
+      <.form
         for={@form}
         id="registration_form"
         phx-submit="save"
@@ -26,19 +26,61 @@ defmodule ProjectZekWeb.UserRegistrationLive do
         phx-trigger-action={@trigger_submit}
         action={~p"/users/log_in?_action=registered"}
         method="post"
+        class="mt-6"
       >
-        <.error :if={@check_errors}>
-          Oops, something went wrong! Please check the errors below.
-        </.error>
+        <div class="space-y-6 rounded-lg border border-gray-700 bg-gray-800 p-6">
+          <.error :if={@check_errors}>
+            Oops, something went wrong! Please check the errors below.
+          </.error>
 
-        <.input field={@form[:email]} type="email" label="Email" required />
-        <.input field={@form[:password]} type="password" label="Password" required />
-        <.input field={@form[:confirm_password]} type="password" label="Password confirmation" required />
+          <div>
+            <label for="user_email" class="block text-sm font-semibold leading-6 text-gray-200">Email</label>
+            <input
+              type="email"
+              name="user[email]"
+              id="user_email"
+              value={@form[:email].value}
+              required
+              class="mt-2 block w-full rounded-lg border border-gray-600 bg-gray-700 text-white focus:border-indigo-400 focus:ring-0 sm:text-sm sm:leading-6"
+            />
+            <.error :for={msg <- Enum.map(@form[:email].errors, &translate_error(&1))}><%= msg %></.error>
+          </div>
 
-        <:actions>
-          <.button phx-disable-with="Creating account..." class="w-full">Create an account</.button>
-        </:actions>
-      </.simple_form>
+          <div>
+            <label for="user_password" class="block text-sm font-semibold leading-6 text-gray-200">Password</label>
+            <input
+              type="password"
+              name="user[password]"
+              id="user_password"
+              phx-update="ignore"
+              phx-debounce="blur"
+              autocomplete="new-password"
+              required
+              class="mt-2 block w-full rounded-lg border border-gray-600 bg-gray-700 text-white focus:border-indigo-400 focus:ring-0 sm:text-sm sm:leading-6"
+            />
+            <.error :for={msg <- Enum.map(@form[:password].errors, &translate_error(&1))}><%= msg %></.error>
+          </div>
+
+          <div>
+            <label for="user_password_confirmation" class="block text-sm font-semibold leading-6 text-gray-200">Password confirmation</label>
+            <input
+              type="password"
+              name="user[password_confirmation]"
+              id="user_password_confirmation"
+              phx-update="ignore"
+              phx-debounce="blur"
+              autocomplete="new-password"
+              required
+              class="mt-2 block w-full rounded-lg border border-gray-600 bg-gray-700 text-white focus:border-indigo-400 focus:ring-0 sm:text-sm sm:leading-6"
+            />
+            <.error :for={msg <- Enum.map(@form[:password_confirmation].errors, &translate_error(&1))}><%= msg %></.error>
+          </div>
+
+          <div>
+            <button class="w-full rounded-lg bg-indigo-600 py-2 px-3 text-sm font-semibold leading-6 text-white hover:bg-indigo-500" phx-disable-with="Creating account...">Create an account</button>
+          </div>
+        </div>
+      </.form>
     </div>
     """
   end

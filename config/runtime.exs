@@ -53,6 +53,12 @@ if config_env() == :prod do
 
   config :project_zek, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  # Accept both apex and www for WebSocket origin checks
+  allowed_origins = [
+    "//#{host}",
+    "//www.#{host}"
+  ]
+
   config :project_zek, ProjectZekWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
@@ -63,6 +69,10 @@ if config_env() == :prod do
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
       port: port
     ],
+    # Ensure HTTPS redirects work correctly behind a proxy (nginx) and enable HSTS
+    force_ssl: [hsts: true, rewrite_on: [:x_forwarded_proto]],
+    # Allow WebSocket/SSE connections from both apex and www hosts
+    check_origin: allowed_origins,
     secret_key_base: secret_key_base
 
   # ## SSL Support

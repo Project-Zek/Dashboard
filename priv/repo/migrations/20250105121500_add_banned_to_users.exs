@@ -1,0 +1,12 @@
+defmodule ProjectZek.Repo.Migrations.AddBannedToUsers do
+  use Ecto.Migration
+
+  def change do
+    alter table(:users) do
+      add :banned, :boolean, default: false, null: false
+    end
+
+    create index(:users, [:banned])
+  end
+end
+

@@ -1,6 +1,9 @@
 defmodule ProjectZek.LoginServer.Account do
   use Ecto.Schema
   import Ecto.Changeset
+  @derive {Flop.Schema,
+           filterable: [:username],
+           sortable: [:username, :last_login_at, :inserted_at]}
 
   schema "login_server_accounts" do
     belongs_to :user, ProjectZek.Accounts.User
@@ -23,24 +26,27 @@ defmodule ProjectZek.LoginServer.Account do
   @doc false
   def changeset(account, attrs) do
     account
-    |> cast(attrs, [:user_id, :username, :password])
+    |> cast(attrs, [:user_id, :username, :password, :last_login_ip, :last_login_at])
     |> validate_required([:user_id, :username, :password])
   end
 
   @doc false
   def registration_changeset(account, attrs, opts \\ []) do
     account
-    |> cast(attrs, [:user_id, :username, :password])
+    |> cast(attrs, [:user_id, :username, :password, :last_login_ip, :last_login_at])
     |> validate_required([:user_id])
     |> validate_username(opts)
     |> validate_password(opts)
     |> validate_confirmation(:password, message: "does not match password")
+    |> unique_constraint(:user_id)
   end
 
-  defp validate_username(changeset, opts) do
+  defp validate_username(changeset, _opts) do
     changeset
     |> validate_required([:username])
     |> validate_length(:username, min: 5, max: 30)
+    |> unsafe_validate_unique(:username, ProjectZek.Repo)
+    |> unique_constraint(:username)
   end
 
   @doc false
@@ -55,9 +61,13 @@ defmodule ProjectZek.LoginServer.Account do
   end
 
   defp hash_password(changeset, opts) do
+    hash_password? = Keyword.get(opts, :hash_password, true)
     password = get_change(changeset, :password)
 
-    changeset
-    |> put_change(:password, ProjectZek.LoginServer.HashUtils.sha1(password))
+    if hash_password? and password do
+      put_change(changeset, :password, ProjectZek.LoginServer.HashUtils.sha1(password))
+    else
+      changeset
+    end
   end
 end

@@ -69,6 +69,15 @@ defmodule ProjectZekWeb.UserSettingsLive do
           </:actions>
         </.simple_form>
       </div>
+      <div>
+        <div class="mt-8 p-4 rounded-lg border border-rose-700 bg-rose-900/20">
+          <h2 class="text-rose-400 font-semibold mb-2">Delete My Account</h2>
+          <p class="text-sm text-gray-300 mb-4">This will permanently delete your web account and associated login server account(s), including all characters and PvP data. This action cannot be undone.</p>
+          <div>
+            <button phx-click="delete_account" data-confirm="Are you sure? This cannot be undone." class="rounded-lg bg-rose-600 hover:bg-rose-500 py-2 px-3 text-sm font-semibold text-white">Delete my account</button>
+          </div>
+        </div>
+      </div>
     </div>
     """
   end
@@ -162,6 +171,29 @@ defmodule ProjectZekWeb.UserSettingsLive do
 
       {:error, changeset} ->
         {:noreply, assign(socket, password_form: to_form(changeset))}
+    end
+  end
+
+  def handle_event("delete_account", _params, socket) do
+    user = socket.assigns.current_user
+
+    # Block if any login server account is banned
+    if ProjectZek.LoginServer.user_has_banned_account?(user) do
+      {:noreply, put_flash(socket, :error, "Your login server account is banned. Contact a superadmin to remove it before deleting.")}
+    else
+      case ProjectZek.Accounts.delete_user_and_related(user) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Your account has been deleted.")
+           |> Phoenix.LiveView.redirect(to: ~p"/users/log_out")}
+
+        {:error, :banned} ->
+          {:noreply, put_flash(socket, :error, "Your login server account is banned. Contact a superadmin.")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Failed to delete your account. Please try again.")}
+      end
     end
   end
 end

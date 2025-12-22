@@ -22,17 +22,7 @@ defmodule ProjectZekWeb.GalleryLive.FormComponent do
         <.input field={@form[:name]} type="text" label="Name" />
         <.input field={@form[:character_data_id]} type="number" label="Character data" />
 
-        <%= live_file_input @uploads.image %>
-
-        <%= for entry <- @uploads.image.entries do %>
-          <%= Phoenix.LiveView.live_img_preview(entry , style: "max-width: 200px; max-height: 200px;") %>
-          <button
-            phx-click="cancel-upload"
-            phx-value-ref={entry.ref}
-          >
-            Cancel
-          </button>
-         <% end %>
+        <.live_file_input upload={@uploads.image} />
 
         <:actions>
           <.button phx-disable-with="Saving...">Save Gallery</.button>

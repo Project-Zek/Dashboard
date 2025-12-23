@@ -47,21 +47,24 @@ defmodule ProjectZekWeb.PvpEntryLive.Gallery do
   defp parse_sort("player"), do: :player
   defp parse_sort(_), do: :latest
 
-  defp list_entries(:latest, filters, screenshot_supported \\ true) do
+  # function head to allow default for third arg only once
+  defp list_entries(_type, _filters, screenshot_supported \\ true)
+
+  defp list_entries(:latest, filters, screenshot_supported) do
     base_query(filters, screenshot_supported)
     |> order_by([e, _c], desc: e.timestamp)
     |> Repo.all()
     |> decorate()
   end
 
-  defp list_entries(:player, filters, screenshot_supported \\ true) do
+  defp list_entries(:player, filters, screenshot_supported) do
     base_query(filters, screenshot_supported)
     |> order_by([e, _c], asc: e.killer_name)
     |> Repo.all()
     |> decorate()
   end
 
-  defp list_entries(:team, filters, screenshot_supported \\ true) do
+  defp list_entries(:team, filters, screenshot_supported) do
     base_query(filters, screenshot_supported)
     |> order_by([_e, c], asc: fragment("CASE WHEN ? IN (?) THEN 1 WHEN ? IN (?) THEN 2 WHEN ? IN (?) THEN 3 ELSE 0 END", c.deity, ^@evil, c.deity, ^@good, c.deity, ^@neutral))
     |> Repo.all()

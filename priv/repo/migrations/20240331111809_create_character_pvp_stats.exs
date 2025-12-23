@@ -3,7 +3,8 @@ defmodule ProjectZek.Repo.Migrations.CreateCharacterPvpStats do
 
   def change do
     create table(:character_pvp_stats) do
-      add :character_data_id, references(:character_data, on_delete: :delete_all)
+      # Match world schema: character_data.id is INT UNSIGNED, so FK must be INT UNSIGNED
+      add :character_data_id, references(:character_data, type: :"int unsigned", on_delete: :delete_all)
       add :pvp_kills, :integer, null: false, default: 0
       add :pvp_deaths, :integer, null: false, default: 0
       add :pvp_current_points, :integer, null: false, default: 0

@@ -22,7 +22,14 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
         phx-submit="save"
         autocomplete="off"
       >
-        <.input field={@form[:username]} type="text" label="Username" required autocomplete="username" />
+        <%= if @action == :new do %>
+          <.input field={@form[:username]} type="text" label="Username" required autocomplete="username" />
+        <% else %>
+          <div class="text-sm">
+            <label class="block text-sm font-semibold leading-6 text-gray-200">Username</label>
+            <div class="mt-2 text-gray-300"><%= @account.username %></div>
+          </div>
+        <% end %>
         <.input
           field={@form[:password]}
           type="password"

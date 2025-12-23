@@ -75,6 +75,14 @@ if config_env() == :prod do
     check_origin: allowed_origins,
     secret_key_base: secret_key_base
 
+  # Superadmin allowlist (comma-separated emails in SUPERADMINS)
+  superadmins =
+    System.get_env("SUPERADMINS", "")
+    |> String.split([",", "\n", " "], trim: true)
+    |> Enum.map(&String.downcase/1)
+
+  config :project_zek, :superadmins, superadmins
+
   # Configure SMTP mailer from environment
   smtp_relay = System.get_env("SMTP_HOST")
   smtp_username = System.get_env("SMTP_USERNAME")

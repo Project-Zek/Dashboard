@@ -196,14 +196,10 @@ defmodule ProjectZek.LoginServer do
     plain_password = Map.get(attrs, "password") || Map.get(attrs, :password)
 
     Multi.new()
-    # Use registration_changeset to hash the password and run validations
+    # Hash and validate only the password, do not allow username changes
     |> Multi.update(:account,
-      Account.registration_changeset(
-        account,
-        attrs
-        |> Map.put("last_password_change_at", now)
-        |> Map.put_new("user_id", account.user_id)
-      )
+      Account.password_changeset(account, attrs)
+      |> Ecto.Changeset.put_change(:last_password_change_at, now)
     )
     |> Multi.run(:ls_account, fn repo, %{account: updated} ->
       case repo.get_by(LsAccount, account_name: updated.username) do

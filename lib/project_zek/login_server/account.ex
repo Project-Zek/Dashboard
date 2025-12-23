@@ -41,6 +41,16 @@ defmodule ProjectZek.LoginServer.Account do
     |> unique_constraint(:user_id)
   end
 
+  @doc """
+  Password-only changeset used for updates. Does not allow changing username.
+  """
+  def password_changeset(account, attrs, opts \\ []) do
+    account
+    |> cast(attrs, [:password])
+    |> validate_password(opts)
+    |> validate_confirmation(:password, message: "does not match password")
+  end
+
   defp validate_username(changeset, _opts) do
     changeset
     |> validate_required([:username])

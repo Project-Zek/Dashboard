@@ -128,7 +128,7 @@ defmodule ProjectZekWeb.AccountLive.Index do
     <.modal :if={@live_action in [:new, :edit]} id="account-modal" show on_cancel={JS.patch(~p"/loginserver/accounts")}>
       <.live_component
         module={ProjectZekWeb.AccountLive.FormComponent}
-          id={@account.id || :new}
+          id={@account.login_server_id || :new}
           title={@page_title}
           action={@live_action}
           account={@account}

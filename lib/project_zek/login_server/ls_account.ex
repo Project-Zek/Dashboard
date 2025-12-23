@@ -1,9 +1,8 @@
 defmodule ProjectZek.LoginServer.LsAccount do
   use Ecto.Schema
   import Ecto.Changeset
-  @derive {Flop.Schema,
-           filterable: [:account_name],
-           sortable: [:account_name, :last_login_date]}
+  @derive {Flop.Schema, filterable: [:account_name], sortable: [:account_name, :last_login_date]}
+  @derive {Phoenix.Param, key: :login_server_id}
 
   @primary_key false
   schema "tblLoginServerAccounts" do

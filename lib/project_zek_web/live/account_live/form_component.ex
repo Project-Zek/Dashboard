@@ -134,7 +134,8 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
   end
 
   defp assign_form(socket, %Ecto.Changeset{} = changeset) do
-    assign(socket, :form, to_form(changeset))
+    # Schema-less changeset requires an explicit :as to generate form names
+    assign(socket, :form, to_form(changeset, as: :account))
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})

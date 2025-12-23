@@ -176,6 +176,9 @@ defmodule ProjectZekWeb.AccountLive.Index do
         v -> v |> to_string() |> String.split(",") |> List.first() |> String.trim()
       end
 
+    # Configure stream DOM ids to use login_server_id instead of default :id
+    socket = stream_configure(socket, :accounts, dom_id: &"ls-#{&1.login_server_id}")
+
     ls_accounts = LoginServer.list_ls_accounts_by_user(socket.assigns.current_user)
     banned_map = Map.new(ls_accounts, fn ls -> {ls.login_server_id, LoginServer.ls_account_banned?(ls)} end)
     chars = LoginServer.list_user_characters(socket.assigns.current_user)
@@ -186,7 +189,7 @@ defmodule ProjectZekWeb.AccountLive.Index do
      |> assign(:has_account?, length(ls_accounts) > 0)
      |> assign(:banned_map, banned_map)
      |> assign(:characters, chars)
-     |> stream(:accounts, ls_accounts, dom_id: &"ls-#{&1.login_server_id}")}
+     |> stream(:accounts, ls_accounts)}
   end
 
   @impl true

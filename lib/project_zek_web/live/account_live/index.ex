@@ -221,21 +221,5 @@ defmodule ProjectZekWeb.AccountLive.Index do
     {:noreply, stream_insert(socket, :accounts, ls)}
   end
 
-  @impl true
-  def handle_event("delete", %{"id" => id}, socket) do
-    ls = ProjectZek.Repo.get!(ProjectZek.LoginServer.LsAccount, String.to_integer(id))
-    case LoginServer.unlink_ls_account(socket.assigns.current_user, ls.login_server_id) do
-      {count, _} when count >= 0 ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Login server account unlinked.")
-         |> stream_delete(:accounts, ls)
-         |> assign(:characters, ProjectZek.LoginServer.list_user_characters(socket.assigns.current_user))}
-
-      _ ->
-        {:noreply, put_flash(socket, :error, "Failed to unlink account. Please try again.")}
-    end
-  end
-
-  # Removing LS deletion from user view; only unlink is allowed here.
+  # Unlink removed from UI; no event handlers needed here.
 end

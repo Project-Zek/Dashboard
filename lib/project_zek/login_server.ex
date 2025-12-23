@@ -26,14 +26,27 @@ defmodule ProjectZek.LoginServer do
     salt = Application.get_env(:project_zek, :login_salt, "")
 
     Repo.transaction(fn ->
-      # Enforce one LS per user (adjust if you want multiple)
-      existing = Repo.one(from m in UserLsAccount, where: m.user_id == ^user.id)
-      if existing, do: Repo.rollback(:already_linked)
+      # Clean up any stale user->LS mappings where the LS row no longer exists
+      from(m in UserLsAccount,
+        left_join: ls in LsAccount,
+        on: ls.login_server_id == m.login_server_id,
+        where: m.user_id == ^user.id and is_nil(ls.login_server_id)
+      )
+      |> Repo.delete_all()
 
-      # Ensure unique username
-      case Repo.get_by(LsAccount, account_name: username) do
-        nil -> :ok
-        _ -> Repo.rollback(:username_taken)
+      # Check constraints up-front for accurate error messages
+      has_link? = Repo.exists?(from m in UserLsAccount, where: m.user_id == ^user.id)
+
+      username_taken? =
+        Repo.exists?(
+          from l in LsAccount,
+            where: fragment("LOWER(?) = LOWER(?)", l.account_name, ^username)
+        )
+
+      cond do
+        has_link? -> Repo.rollback(:already_linked)
+        username_taken? -> Repo.rollback(:username_taken)
+        true -> :ok
       end
 
       # Create LS row using salted SHA and NOW()

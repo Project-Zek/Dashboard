@@ -75,6 +75,33 @@ if config_env() == :prod do
     check_origin: allowed_origins,
     secret_key_base: secret_key_base
 
+  # Configure SMTP mailer from environment
+  smtp_relay = System.get_env("SMTP_HOST")
+  smtp_username = System.get_env("SMTP_USERNAME")
+  smtp_password = System.get_env("SMTP_PASSWORD")
+  smtp_port = String.to_integer(System.get_env("SMTP_PORT") || "587")
+  smtp_ssl = System.get_env("SMTP_SSL") in ["true", "1"]
+  smtp_tls =
+    case System.get_env("SMTP_TLS") do
+      "always" -> :always
+      "never" -> :never
+      _ -> :if_available
+    end
+
+  config :project_zek, ProjectZek.Mailer,
+    adapter: Swoosh.Adapters.SMTP,
+    relay: smtp_relay,
+    username: smtp_username,
+    password: smtp_password,
+    port: smtp_port,
+    ssl: smtp_ssl,
+    tls: smtp_tls,
+    auth: :always,
+    retries: 2
+
+  # Using SMTP adapter, disable API client
+  config :swoosh, api_client: false
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

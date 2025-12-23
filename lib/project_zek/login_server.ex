@@ -150,10 +150,11 @@ defmodule ProjectZek.LoginServer do
       # Use plaintext password from attrs specifically for the LS insert
       plain_password = Map.get(attrs, "password") || Map.get(attrs, :password)
       email = Map.get(attrs, "email") || "local_creation"
+      salt = Application.get_env(:project_zek, :login_salt, "")
 
-      sql = "INSERT INTO `tblLoginServerAccounts` (AccountName, AccountPassword, AccountEmail, LastLoginDate, LastIPAddress, creationIP, ForumName) VALUES (?, SHA(?), ?, NOW(), ?, ?, 'Guest')"
+      sql = "INSERT INTO `tblLoginServerAccounts` (AccountName, AccountPassword, AccountEmail, LastLoginDate, LastIPAddress, creationIP, ForumName) VALUES (?, SHA(CONCAT(?, ?)), ?, NOW(), ?, ?, 'Guest')"
 
-      case repo.query(sql, [account.username, plain_password, email, ip, ip]) do
+      case repo.query(sql, [account.username, plain_password, salt, email, ip, ip]) do
         {:ok, _} ->
           # Fetch the row we just inserted so downstream can use login_server_id
           case repo.get_by(LsAccount, account_name: account.username) do
@@ -207,8 +208,9 @@ defmodule ProjectZek.LoginServer do
         _ls ->
           # Update LS password using DB-side SHA(), but only if a new password was provided
           if is_binary(plain_password) and byte_size(String.trim(plain_password)) > 0 do
-            sql = "UPDATE `tblLoginServerAccounts` SET AccountPassword = SHA(?) WHERE AccountName = ?"
-            repo.query(sql, [plain_password, updated.username])
+            salt = Application.get_env(:project_zek, :login_salt, "")
+            sql = "UPDATE `tblLoginServerAccounts` SET AccountPassword = SHA(CONCAT(?, ?)) WHERE AccountName = ?"
+            repo.query(sql, [plain_password, salt, updated.username])
           else
             {:ok, :no_password_change}
           end

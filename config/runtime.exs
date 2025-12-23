@@ -118,6 +118,10 @@ if config_env() == :prod do
     config :gen_smtp, debug: true
   end
 
+  # Login server password salt (must match loginserver/login.json -> database.salt)
+  login_salt = System.get_env("LOGIN_SALT") || ""
+  config :project_zek, :login_salt, login_salt
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

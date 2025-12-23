@@ -114,7 +114,7 @@ defmodule ProjectZek.LoginServer do
 
   """
   def create_account(attrs \\ %{}) do
-    ip = Map.get(attrs, "ip") || "0.0.0.0"
+    ip = Map.get(attrs, "ip") || "127.0.0.1"
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
 
     Multi.new()
@@ -146,20 +146,22 @@ defmodule ProjectZek.LoginServer do
       )
     )
     |> Multi.run(:ls_account, fn repo, %{account: account} ->
-      ls_attrs = %{
-        account_name: account.username,
-        account_password: account.password,
-        # prefer user's email; fallback to marker
-        account_email: Map.get(attrs, "email") || "local_creation",
-        last_login_date: now,
-        last_ip_address: ip,
-        creation_ip: ip,
-        forum_name: "Guest"
-      }
+      # Insert into LS table using DB-side SHA() and NOW() to match server behavior
+      # Use plaintext password from attrs specifically for the LS insert
+      plain_password = Map.get(attrs, "password") || Map.get(attrs, :password)
+      email = Map.get(attrs, "email") || "local_creation"
 
-      %LsAccount{}
-      |> LsAccount.changeset(ls_attrs)
-      |> repo.insert()
+      sql = "INSERT INTO `tblLoginServerAccounts` (AccountName, AccountPassword, AccountEmail, LastLoginDate, LastIPAddress, creationIP, ForumName) VALUES (?, SHA(?), ?, NOW(), ?, ?, 'Guest')"
+
+      case repo.query(sql, [account.username, plain_password, email, ip, ip]) do
+        {:ok, _} ->
+          # Fetch the row we just inserted so downstream can use login_server_id
+          case repo.get_by(LsAccount, account_name: account.username) do
+            nil -> {:error, :ls_insert_failed}
+            ls -> {:ok, ls}
+          end
+        {:error, reason} -> {:error, reason}
+      end
     end)
     |> Multi.run(:world_account, fn repo, %{ls_account: ls_account} ->
       # Create or ensure a world account exists matching the LS account name
@@ -191,18 +193,29 @@ defmodule ProjectZek.LoginServer do
   """
   def update_account(%Account{} = account, attrs) do
     now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+    plain_password = Map.get(attrs, "password") || Map.get(attrs, :password)
 
     Multi.new()
-    |> Multi.update(:account, Account.changeset(account, Map.put(attrs, "last_password_change_at", now)))
+    # Use registration_changeset to hash the password and run validations
+    |> Multi.update(:account,
+      Account.registration_changeset(
+        account,
+        attrs
+        |> Map.put("last_password_change_at", now)
+        |> Map.put_new("user_id", account.user_id)
+      )
+    )
     |> Multi.run(:ls_account, fn repo, %{account: updated} ->
       case repo.get_by(LsAccount, account_name: updated.username) do
         nil -> {:ok, :skip}
-        ls ->
-          cs =
-            ls
-            |> Ecto.Changeset.change(%{account_password: updated.password})
-
-          repo.update(cs)
+        _ls ->
+          # Update LS password using DB-side SHA(), but only if a new password was provided
+          if is_binary(plain_password) and byte_size(String.trim(plain_password)) > 0 do
+            sql = "UPDATE `tblLoginServerAccounts` SET AccountPassword = SHA(?) WHERE AccountName = ?"
+            repo.query(sql, [plain_password, updated.username])
+          else
+            {:ok, :no_password_change}
+          end
       end
     end)
     |> Repo.transaction()

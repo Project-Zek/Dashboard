@@ -58,7 +58,7 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
   end
 
   @impl true
-  def update(%{account: account} = assigns, socket) do
+  def update(%{account: _account} = assigns, socket) do
     changeset =
       if assigns[:action] == :new do
         new_changeset(%{})

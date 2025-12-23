@@ -11,7 +11,7 @@ defmodule ProjectZek.Repo.Migrations.CreateCharacterPvpEntries do
       add :victim_level, :integer
       add :zone_id, :integer
       add :points, :integer
-      add :timestamp, :utc_datetime
+      add :timestamp, :integer
 
       timestamps(type: :utc_datetime)
     end

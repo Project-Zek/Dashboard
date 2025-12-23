@@ -200,7 +200,7 @@ defmodule ProjectZek.LoginServer do
         ls ->
           cs =
             ls
-            |> Ecto.Changeset.change(%{account_password: updated.password, lastpass_change: DateTime.to_unix(DateTime.utc_now())})
+            |> Ecto.Changeset.change(%{account_password: updated.password})
 
           repo.update(cs)
       end

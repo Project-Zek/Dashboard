@@ -87,6 +87,7 @@ if config_env() == :prod do
       "never" -> :never
       _ -> :if_available
     end
+  smtp_helo = System.get_env("SMTP_HELO") || host
 
   config :project_zek, ProjectZek.Mailer,
     adapter: Swoosh.Adapters.SMTP,
@@ -96,11 +97,18 @@ if config_env() == :prod do
     port: smtp_port,
     ssl: smtp_ssl,
     tls: smtp_tls,
+    hostname: smtp_helo,
+    no_mx_lookups: true,
     auth: :always,
     retries: 2
 
   # Using SMTP adapter, disable API client
   config :swoosh, api_client: false
+
+  # Optional SMTP debug logging (set SMTP_DEBUG=true)
+  if System.get_env("SMTP_DEBUG") in ["true", "1"] do
+    config :gen_smtp, debug: true
+  end
 
   # ## SSL Support
   #

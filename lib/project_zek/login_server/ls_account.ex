@@ -15,8 +15,6 @@ defmodule ProjectZek.LoginServer.LsAccount do
     field :client_unlock, :integer, source: :client_unlock
     field :created_by, :integer, source: :created_by
     field :max_accts, :integer, source: :max_accts
-    field :num_ip_bypass, :integer, source: :Num_IP_Bypass
-    field :lastpass_change, :integer, source: :lastpass_change
   end
 
   def changeset(ls_account, attrs) do
@@ -31,9 +29,7 @@ defmodule ProjectZek.LoginServer.LsAccount do
       :forum_name,
       :client_unlock,
       :created_by,
-      :max_accts,
-      :num_ip_bypass,
-      :lastpass_change
+      :max_accts
     ])
     |> validate_required([:account_name, :account_password, :last_login_date, :last_ip_address, :creation_ip])
   end

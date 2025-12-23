@@ -12,7 +12,7 @@ defmodule ProjectZekWeb.UserForgotPasswordLive do
       </.header>
 
       <.simple_form for={@form} id="reset_password_form" phx-submit="send_email">
-        <.input field={@form[:email]} type="email" placeholder="Email" required />
+        <.input field={@form[:email]} type="email" label="Email" placeholder="Email" required />
         <:actions>
           <.button phx-disable-with="Sending..." class="w-full">
             Send password reset instructions

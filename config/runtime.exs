@@ -119,7 +119,8 @@ if config_env() == :prod do
   end
 
   # Login server password salt (must match loginserver/login.json -> database.salt)
-  login_salt = System.get_env("LOGIN_SALT") || ""
+  # Support both LOGIN_SALT and legacy SALT_LOGIN env names.
+  login_salt = System.get_env("LOGIN_SALT") || System.get_env("SALT_LOGIN") || ""
   config :project_zek, :login_salt, login_salt
 
   # ## SSL Support

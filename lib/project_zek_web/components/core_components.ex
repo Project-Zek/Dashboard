@@ -309,7 +309,7 @@ defmodule ProjectZekWeb.CoreComponents do
 
     ~H"""
     <div phx-feedback-for={@name}>
-      <label class="flex items-center gap-4 text-sm leading-6 text-zinc-600">
+      <label class="flex items-center gap-4 text-sm leading-6 text-gray-800">
         <input type="hidden" name={@name} value="false" />
         <input
           type="checkbox"
@@ -397,7 +397,7 @@ defmodule ProjectZekWeb.CoreComponents do
 
   def label(assigns) do
     ~H"""
-    <label for={@for} class="block text-sm font-semibold leading-6 text-gray-200">
+    <label for={@for} class="block text-sm font-semibold leading-6 text-gray-800">
       <%= render_slot(@inner_block) %>
     </label>
     """

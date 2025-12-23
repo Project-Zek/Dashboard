@@ -56,13 +56,6 @@ defmodule ProjectZekWeb.AccountLive.Index do
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
                             <div class="flex gap-3">
                               <.link patch={~p"/loginserver/accounts/#{account.login_server_id}/edit"} class="text-indigo-400 hover:underline">Change Password</.link>
-                              <.link
-                                phx-click={JS.push("delete", value: %{id: account.login_server_id})}
-                                data-confirm="Unlink this login server account from your web account? Your LS account and characters will remain."
-                                class="text-rose-400 hover:underline"
-                              >
-                                Unlink
-                              </.link>
                             </div>
                           </td>
                         </tr>

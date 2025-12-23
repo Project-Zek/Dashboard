@@ -24,12 +24,11 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
         autocomplete="off"
       >
         <%= if @action == :new do %>
-          <.input field={@form[:mode]} type="select" label="Action" options={[{"Create new LS account", "create"}, {"Link existing LS account", "link"}]} />
           <.input field={@form[:username]} type="text" label="Username" required autocomplete="username" />
         <% else %>
           <div class="text-sm">
-            <label class="block text-sm font-semibold leading-6 text-gray-200">Username</label>
-            <div class="mt-2 text-gray-300"><%= @account.account_name %></div>
+            <label class="block text-sm font-semibold leading-6 text-gray-800">Username</label>
+            <div class="mt-2 text-gray-900"><%= @account.account_name %></div>
           </div>
         <% end %>
         <.input
@@ -115,10 +114,7 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
       |> Map.put_new("email", socket.assigns.current_user.email)
       |> Map.put_new("ip", socket.assigns.request_ip)
 
-    case (case Map.get(account_params, "mode", "create") do
-            "link" -> LoginServer.link_existing_ls_account(socket.assigns.current_user, Map.get(account_params, "username"), Map.get(account_params, "password"))
-            _ -> LoginServer.create_ls_account_and_link(socket.assigns.current_user, attrs)
-          end) do
+    case LoginServer.create_ls_account_and_link(socket.assigns.current_user, attrs) do
       {:ok, ls} ->
         notify_parent({:saved, ls})
 
@@ -127,9 +123,26 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
          |> put_flash(:info, "Account created successfully")
          |> push_patch(to: socket.assigns.patch)}
 
-      {:error, :already_linked} -> {:noreply, put_flash(socket, :error, "You already have a linked account.")}
-      {:error, :username_taken} -> {:noreply, put_flash(socket, :error, "Username is already taken.")}
-      {:error, reason} -> {:noreply, put_flash(socket, :error, "Failed to create account: #{inspect(reason)}")}
+      {:error, :already_linked} ->
+        cs =
+          new_changeset(account_params)
+          |> Ecto.Changeset.add_error(:username, "you already have a linked account")
+          |> Map.put(:action, :validate)
+        {:noreply, assign_form(socket, cs)}
+
+      {:error, :username_taken} ->
+        cs =
+          new_changeset(account_params)
+          |> Ecto.Changeset.add_error(:username, "is already taken")
+          |> Map.put(:action, :validate)
+        {:noreply, assign_form(socket, cs)}
+
+      {:error, _reason} ->
+        cs =
+          new_changeset(account_params)
+          |> Ecto.Changeset.add_error(:username, "failed to create account, please try again")
+          |> Map.put(:action, :validate)
+        {:noreply, assign_form(socket, cs)}
     end
   end
 
@@ -141,8 +154,8 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
   defp new_changeset(attrs) do
-    {%{}, %{mode: :string, username: :string, password: :string, password_confirmation: :string}}
-    |> Changeset.cast(attrs, [:mode, :username, :password, :password_confirmation])
+    {%{}, %{username: :string, password: :string, password_confirmation: :string}}
+    |> Changeset.cast(attrs, [:username, :password, :password_confirmation])
     |> Changeset.validate_required([:username, :password, :password_confirmation])
     |> Changeset.validate_length(:username, min: 3, max: 30)
     |> Changeset.validate_length(:password, min: 8, max: 50)

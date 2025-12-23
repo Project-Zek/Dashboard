@@ -8,7 +8,8 @@ defmodule ProjectZekWeb.AccountAdminLive.Index do
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
     if LoginServer.superadmin?(user) do
-      flop = %{order_by: [:inserted_at], order_directions: [:desc], page_size: 25, page: 1}
+      # Use a sortable field defined on LsAccount (see @derive in schema)
+      flop = %{order_by: [:last_login_date], order_directions: [:desc], page_size: 25, page: 1}
       {:ok, fetch(socket, flop, %{"q" => nil, "status" => nil})}
     else
       {:ok,

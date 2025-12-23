@@ -285,6 +285,7 @@ defmodule ProjectZekWeb.CoreComponents do
   attr :prompt, :string, default: nil, doc: "the prompt for select inputs"
   attr :options, :list, doc: "the options to pass to Phoenix.HTML.Form.options_for_select/2"
   attr :multiple, :boolean, default: false, doc: "the multiple flag for select inputs"
+  attr :label_class, :string, default: nil
 
   attr :rest, :global,
     include: ~w(accept autocomplete capture cols disabled form list max maxlength min minlength
@@ -330,7 +331,7 @@ defmodule ProjectZekWeb.CoreComponents do
   def input(%{type: "select"} = assigns) do
     ~H"""
     <div phx-feedback-for={@name}>
-      <.label for={@id}><%= @label %></.label>
+      <.label for={@id} class={@label_class}><%= @label %></.label>
       <select
         id={@id}
         name={@name}
@@ -349,7 +350,7 @@ defmodule ProjectZekWeb.CoreComponents do
   def input(%{type: "textarea"} = assigns) do
     ~H"""
     <div phx-feedback-for={@name}>
-      <.label for={@id}><%= @label %></.label>
+      <.label for={@id} class={@label_class}><%= @label %></.label>
       <textarea
         id={@id}
         name={@name}
@@ -370,7 +371,7 @@ defmodule ProjectZekWeb.CoreComponents do
   def input(assigns) do
     ~H"""
     <div phx-feedback-for={@name}>
-      <.label for={@id}><%= @label %></.label>
+      <.label for={@id} class={@label_class}><%= @label %></.label>
       <input
         type={@type}
         name={@name}
@@ -393,11 +394,12 @@ defmodule ProjectZekWeb.CoreComponents do
   Renders a label.
   """
   attr :for, :string, default: nil
+  attr :class, :string, default: nil
   slot :inner_block, required: true
 
   def label(assigns) do
     ~H"""
-    <label for={@for} class="block text-sm font-semibold leading-6 text-gray-800">
+    <label for={@for} class={["block text-sm font-semibold leading-6", @class || "text-gray-200"]}>
       <%= render_slot(@inner_block) %>
     </label>
     """

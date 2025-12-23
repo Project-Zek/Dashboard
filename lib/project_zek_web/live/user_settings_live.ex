@@ -186,7 +186,7 @@ defmodule ProjectZekWeb.UserSettingsLive do
           {:noreply,
            socket
            |> put_flash(:info, "Your account has been deleted.")
-           |> Phoenix.LiveView.redirect(to: ~p"/users/log_out")}
+           |> Phoenix.LiveView.redirect(to: ~p"/")}
 
         {:error, :banned} ->
           {:noreply, put_flash(socket, :error, "Your login server account is banned. Contact a superadmin.")}

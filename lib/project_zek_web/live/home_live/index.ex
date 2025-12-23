@@ -12,7 +12,7 @@ defmodule ProjectZekWeb.HomeLive.Index do
     <div class="bg-gray-900 text-white">
       <div class="w-full">
         <div
-          class="w-full h-32 sm:h-40 md:h-48 lg:h-56 bg-center bg-cover bg-no-repeat"
+          class="w-full h-40 sm:h-56 md:h-72 lg:h-80 bg-center bg-contain bg-no-repeat"
           style={"background-image: url('#{~p"/images/project_zek_banner.png"}');"}
         >
         </div>

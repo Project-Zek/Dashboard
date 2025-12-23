@@ -24,7 +24,7 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
         autocomplete="off"
       >
         <%= if @action == :new do %>
-          <.input field={@form[:username]} type="text" label="Username" required autocomplete="username" />
+          <.input field={@form[:username]} type="text" label="Username" required autocomplete="username" label_class="text-gray-800" />
         <% else %>
           <div class="text-sm">
             <label class="block text-sm font-semibold leading-6 text-gray-800">Username</label>
@@ -38,6 +38,7 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
           required
           autocomplete="new-password"
           value={@password_val}
+          label_class="text-gray-800"
         />
         <.input
           field={@form[:password_confirmation]}
@@ -46,6 +47,7 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
           required
           autocomplete="new-password"
           value={@password_confirmation_val}
+          label_class="text-gray-800"
         />
         <:actions>
           <.button phx-disable-with="Saving...">Save Account</.button>

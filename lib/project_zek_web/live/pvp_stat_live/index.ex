@@ -119,7 +119,8 @@ defmodule ProjectZekWeb.PvpStatLive.Index do
           <div class="px-4 sm:px-6 lg:px-8">
             <div class="sm:flex sm:items-center justify-between">
               <div class="sm:flex-auto">
-                <h1 class="text-base font-semibold text-white">Players</h1>
+                <h1 class="text-base font-semibold text-white">Leaderboard</h1>
+                <p class="mt-1 text-sm text-gray-300">Only characters with PvP activity appear here.</p>
               </div>
               <div class="flex gap-3">
                 <form phx-change="search">

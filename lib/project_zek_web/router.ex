@@ -21,6 +21,8 @@ defmodule ProjectZekWeb.Router do
     pipe_through :browser
 
     live "/", HomeLive.Index, :index
+    # Leaderboard (renamed from /players). Keep /players for compatibility if desired.
+    live "/leaderboard", PvpStatLive.Index, :index
     live "/players", PvpStatLive.Index, :index
     live "/guilds", GuildLive.Index, :index
     live "/teams", TeamLive.Index, :index

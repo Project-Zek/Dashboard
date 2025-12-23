@@ -4,7 +4,6 @@ defmodule ProjectZek.Characters.Character do
 
   schema "character_data" do
     field :account_id, :integer
-    field :forum_id, :integer
     field :name, :string
     field :last_name, :string
     field :title, :string
@@ -84,7 +83,6 @@ defmodule ProjectZek.Characters.Character do
     character
     |> cast(attrs, [
       :account_id,
-      :forum_id,
       :name,
       :last_name,
       :title,
@@ -148,7 +146,6 @@ defmodule ProjectZek.Characters.Character do
     ])
     |> validate_required([
       :account_id,
-      :forum_id,
       :name,
       :last_name,
       :title,

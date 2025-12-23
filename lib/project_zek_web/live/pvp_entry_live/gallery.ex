@@ -14,6 +14,7 @@ defmodule ProjectZekWeb.PvpEntryLive.Gallery do
   @impl true
   def mount(params, _session, socket) do
     sort_by = parse_sort(Map.get(params, "sort", "latest"))
+    screenshot_supported = column_exists?("character_pvp_entries", "screenshot")
     filters = %{
       player: Map.get(params, "player"),
       victim: Map.get(params, "victim"),
@@ -22,9 +23,9 @@ defmodule ProjectZekWeb.PvpEntryLive.Gallery do
       guild_id: Map.get(params, "guild_id"),
       team: Map.get(params, "team")
     }
-    entries = list_entries(sort_by, filters)
+    entries = list_entries(sort_by, filters, screenshot_supported)
     guilds = Repo.all(from g in Guild, order_by: g.name, select: {g.name, g.id})
-    {:ok, assign(socket, entries: entries, sort_by: sort_by, guilds: guilds) |> assign(filters)}
+    {:ok, assign(socket, entries: entries, sort_by: sort_by, guilds: guilds, screenshot_supported: screenshot_supported) |> assign(filters)}
   end
 
   @impl true
@@ -38,7 +39,7 @@ defmodule ProjectZekWeb.PvpEntryLive.Gallery do
       guild_id: Map.get(params, "guild_id"),
       team: Map.get(params, "team")
     }
-    {:noreply, socket |> assign(filters) |> assign(entries: list_entries(sort_by, filters), sort_by: sort_by)}
+    {:noreply, socket |> assign(filters) |> assign(entries: list_entries(sort_by, filters, socket.assigns.screenshot_supported), sort_by: sort_by)}
   end
 
   defp parse_sort("latest"), do: :latest
@@ -46,34 +47,39 @@ defmodule ProjectZekWeb.PvpEntryLive.Gallery do
   defp parse_sort("player"), do: :player
   defp parse_sort(_), do: :latest
 
-  defp list_entries(:latest, filters) do
-    base_query(filters)
+  defp list_entries(:latest, filters, screenshot_supported \\ true) do
+    base_query(filters, screenshot_supported)
     |> order_by([e, _c], desc: e.timestamp)
     |> Repo.all()
     |> decorate()
   end
 
-  defp list_entries(:player, filters) do
-    base_query(filters)
+  defp list_entries(:player, filters, screenshot_supported \\ true) do
+    base_query(filters, screenshot_supported)
     |> order_by([e, _c], asc: e.killer_name)
     |> Repo.all()
     |> decorate()
   end
 
-  defp list_entries(:team, filters) do
-    base_query(filters)
+  defp list_entries(:team, filters, screenshot_supported \\ true) do
+    base_query(filters, screenshot_supported)
     |> order_by([_e, c], asc: fragment("CASE WHEN ? IN (?) THEN 1 WHEN ? IN (?) THEN 2 WHEN ? IN (?) THEN 3 ELSE 0 END", c.deity, ^@evil, c.deity, ^@good, c.deity, ^@neutral))
     |> Repo.all()
     |> decorate()
   end
 
-  defp base_query(filters \\ %{}) do
+  defp base_query(filters \\ %{}, screenshot_supported \\ true) do
     q =
       from e in PvpEntry,
         join: c in Character,
         on: c.id == e.killer_id,
-        where: not is_nil(e.screenshot),
         select: {e, c}
+
+    q = if screenshot_supported do
+      where(q, [e, _c], not is_nil(e.screenshot))
+    else
+      q
+    end
 
     q =
       case Map.get(filters, :player) do
@@ -156,10 +162,18 @@ defmodule ProjectZekWeb.PvpEntryLive.Gallery do
         victim_name: e.victim_name,
         timestamp: e.timestamp,
         timestamp_fmt: format_ts(e.timestamp),
-        screenshot_url: PvpScreenshot.url({e.screenshot, e}, :thumb),
+        screenshot_url: e.screenshot && PvpScreenshot.url({e.screenshot, e}, :thumb),
         team_name: team_name(c.deity)
       }
     end)
+  end
+
+  defp column_exists?(table, column) do
+    sql = "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1"
+    case Repo.query(sql, [table, column]) do
+      {:ok, %{num_rows: n}} when n > 0 -> true
+      _ -> false
+    end
   end
 
   defp team_name(deity) when deity in @evil, do: "Evil"
@@ -217,7 +231,11 @@ defmodule ProjectZekWeb.PvpEntryLive.Gallery do
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           <%= for item <- @entries do %>
             <div class="bg-gray-800 rounded shadow overflow-hidden">
-              <img src={item.screenshot_url} alt="PvP screenshot" class="w-full h-40 object-cover" />
+              <%= if @screenshot_supported and item.screenshot_url do %>
+                <img src={item.screenshot_url} alt="PvP screenshot" class="w-full h-40 object-cover" />
+              <% else %>
+                <div class="w-full h-40 bg-gray-700 flex items-center justify-center text-gray-400 text-xs">No screenshot</div>
+              <% end %>
               <div class="p-3 text-sm text-gray-200">
                 <div class="flex justify-between">
                   <span class="font-medium"><%= item.killer_name %></span>

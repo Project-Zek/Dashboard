@@ -105,35 +105,26 @@ defmodule ProjectZek.Accounts do
   end
 
   @doc """
-  Deletes the web user and all related data, including login server and world accounts.
+  Deletes the web user and unlinks any LS mappings. Does not delete LS/world data.
 
-  Fails with {:error, :banned} if any login server account is banned.
+  Fails with {:error, :banned} if any linked LS account is banned.
   """
   def delete_user_and_related(%User{} = user) do
-    import Ecto.Query
     alias ProjectZek.LoginServer
+    alias ProjectZek.LoginServer.UserLsAccount
+    import Ecto.Query
 
-    ls_accounts = LoginServer.list_accounts_by_user_id(user.id)
-
-    if Enum.any?(ls_accounts, fn a ->
-         LoginServer.user_has_banned_account?(%User{id: user.id, email: user.email})
-       end) do
+    if LoginServer.user_has_banned_account?(user) do
       {:error, :banned}
     else
-      # Deep delete each LS account
-      with :ok <-
-             Enum.reduce_while(ls_accounts, :ok, fn a, _acc ->
-               case LoginServer.delete_account_deep(a, user) do
-                 {:ok, _} -> {:cont, :ok}
-                 {:error, reason} -> {:halt, {:error, reason}}
-               end
-             end) do
-        # Remove all tokens and the user
-        Repo.transaction(fn ->
-          Repo.delete_all(ProjectZek.Accounts.UserToken.by_user_and_contexts_query(user, :all))
-          Repo.delete(user)
-        end)
-      end
+      Repo.transaction(fn ->
+        # Remove all tokens
+        Repo.delete_all(ProjectZek.Accounts.UserToken.by_user_and_contexts_query(user, :all))
+        # Unlink any mappings
+        Repo.delete_all(from m in UserLsAccount, where: m.user_id == ^user.id)
+        # Delete the user
+        Repo.delete(user)
+      end)
     end
   end
 

@@ -23,7 +23,7 @@ defmodule ProjectZekWeb.CharacterLive.Show do
 
   defp authorized?(nil, _account_id), do: false
   defp authorized?(user, account_id) do
-    usernames = LoginServer.list_accounts_by_user_id(user.id) |> Enum.map(& &1.username)
+    usernames = LoginServer.list_ls_accounts_by_user(%ProjectZek.Accounts.User{id: user.id}) |> Enum.map(& &1.account_name)
     import Ecto.Query
     world_ids =
       from(a in WorldAccount, where: a.name in ^usernames, select: a.id)

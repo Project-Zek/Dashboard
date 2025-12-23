@@ -72,7 +72,7 @@ defmodule ProjectZekWeb.UserSettingsLive do
       <div>
         <div class="mt-8 p-4 rounded-lg border border-rose-700 bg-rose-900/20">
           <h2 class="text-rose-400 font-semibold mb-2">Delete My Account</h2>
-          <p class="text-sm text-gray-300 mb-4">This will permanently delete your web account and associated login server account(s), including all characters and PvP data. This action cannot be undone.</p>
+          <p class="text-sm text-gray-300 mb-4">This will permanently delete your web account and unlink it from your login server account. Your LS account and characters remain unaffected. This action cannot be undone.</p>
           <div>
             <button phx-click="delete_account" data-confirm="Are you sure? This cannot be undone." class="rounded-lg bg-rose-600 hover:bg-rose-500 py-2 px-3 text-sm font-semibold text-white">Delete my account</button>
           </div>

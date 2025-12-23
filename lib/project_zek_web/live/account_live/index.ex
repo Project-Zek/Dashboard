@@ -4,7 +4,7 @@ defmodule ProjectZekWeb.AccountLive.Index do
   require Logger
 
   alias ProjectZek.LoginServer
-  alias ProjectZek.LoginServer.Account
+  alias ProjectZek.LoginServer.LsAccount
 
   @impl true
   def render(assigns) do
@@ -37,35 +37,31 @@ defmodule ProjectZekWeb.AccountLive.Index do
                         <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Status</th>
                         <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Last login date</th>
                         <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Last ip address</th>
-                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Created at</th>
-                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Updated at</th>
                         <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Actions</th>
                       </tr>
                     </thead>
                     <tbody id="accounts" phx-update={match?(%Phoenix.LiveView.LiveStream{}, @streams.accounts) && "stream"} class="divide-y divide-gray-800">
                       <%= for {dom_id, account} <- @streams.accounts do %>
                         <tr id={dom_id}>
-                          <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0"><%= account.username %></td>
+                          <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0"><%= account.account_name %></td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                            <%= if @banned_map[account.id] do %>
+                            <%= if @banned_map[account.login_server_id] do %>
                               <span class="inline-flex items-center rounded-full bg-rose-600/20 px-2 py-0.5 text-xs font-medium text-rose-400 ring-1 ring-inset ring-rose-600/30">Banned</span>
                             <% else %>
                               <span class="inline-flex items-center rounded-full bg-emerald-600/20 px-2 py-0.5 text-xs font-medium text-emerald-400 ring-1 ring-inset ring-emerald-600/30">Active</span>
                             <% end %>
                           </td>
-                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.last_login_at %></td>
-                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.last_login_ip %></td>
-                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.inserted_at %></td>
-                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.updated_at %></td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.last_login_date %></td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.last_ip_address %></td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
                             <div class="flex gap-3">
-                              <.link patch={~p"/loginserver/accounts/#{account.id}/edit"} class="text-indigo-400 hover:underline">Change Password</.link>
+                              <.link patch={~p"/loginserver/accounts/#{account.login_server_id}/edit"} class="text-indigo-400 hover:underline">Change Password</.link>
                               <.link
-                                phx-click={JS.push("delete", value: %{id: account.id})}
-                                data-confirm="Are you sure you want to delete this login server account? This will remove associated characters."
+                                phx-click={JS.push("delete", value: %{id: account.login_server_id})}
+                                data-confirm="Unlink this login server account from your web account? Your LS account and characters will remain."
                                 class="text-rose-400 hover:underline"
                               >
-                                Delete
+                                Unlink
                               </.link>
                             </div>
                           </td>
@@ -180,21 +176,17 @@ defmodule ProjectZekWeb.AccountLive.Index do
         v -> v |> to_string() |> String.split(",") |> List.first() |> String.trim()
       end
 
-    user_id = socket.assigns.current_user.id
-    accounts = LoginServer.list_accounts_by_user_id(user_id)
-
-    banned_map =
-      Map.new(accounts, fn a -> {a.id, ProjectZek.LoginServer.account_banned?(a)} end)
-
-    chars = ProjectZek.LoginServer.list_user_characters(socket.assigns.current_user)
+    ls_accounts = LoginServer.list_ls_accounts_by_user(socket.assigns.current_user)
+    banned_map = Map.new(ls_accounts, fn ls -> {ls.login_server_id, LoginServer.ls_account_banned?(ls)} end)
+    chars = LoginServer.list_user_characters(socket.assigns.current_user)
 
     {:ok,
      socket
-      |> assign(:request_ip, ip)
-      |> assign(:has_account?, length(accounts) > 0)
-      |> assign(:banned_map, banned_map)
-      |> assign(:characters, chars)
-      |> stream(:accounts, accounts)}
+     |> assign(:request_ip, ip)
+     |> assign(:has_account?, length(ls_accounts) > 0)
+     |> assign(:banned_map, banned_map)
+     |> assign(:characters, chars)
+     |> stream(:accounts, ls_accounts)}
   end
 
   @impl true
@@ -203,11 +195,12 @@ defmodule ProjectZekWeb.AccountLive.Index do
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
-    account = LoginServer.get_account!(id)
-    if account.user_id == socket.assigns.current_user.id do
+    ls = ProjectZek.Repo.get!(ProjectZek.LoginServer.LsAccount, String.to_integer(id))
+    owned = Enum.any?(LoginServer.list_ls_accounts_by_user(socket.assigns.current_user), &(&1.login_server_id == ls.login_server_id))
+    if owned do
       socket
       |> assign(:page_title, "Edit Account")
-      |> assign(:account, account)
+      |> assign(:account, ls)
     else
       socket
       |> put_flash(:error, "Not authorized to edit this account")
@@ -218,7 +211,7 @@ defmodule ProjectZekWeb.AccountLive.Index do
   defp apply_action(socket, :new, _params) do
     socket
     |> assign(:page_title, "New Login Server Account")
-    |> assign(:account, %Account{})
+    |> assign(:account, %ProjectZek.LoginServer.LsAccount{})
   end
 
   defp apply_action(socket, :index, _params) do
@@ -228,30 +221,25 @@ defmodule ProjectZekWeb.AccountLive.Index do
   end
 
   @impl true
-  def handle_info({ProjectZekWeb.AccountLive.FormComponent, {:saved, account}}, socket) do
-    {:noreply, stream_insert(socket, :accounts, account)}
+  def handle_info({ProjectZekWeb.AccountLive.FormComponent, {:saved, ls}}, socket) do
+    {:noreply, stream_insert(socket, :accounts, ls)}
   end
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    account = LoginServer.get_account!(id)
-    case LoginServer.delete_account_deep(account, socket.assigns.current_user) do
-      {:ok, _} ->
-        # Refresh characters list since deletion removes them
+    ls = ProjectZek.Repo.get!(ProjectZek.LoginServer.LsAccount, String.to_integer(id))
+    case LoginServer.unlink_ls_account(socket.assigns.current_user, ls.login_server_id) do
+      {count, _} when count >= 0 ->
         {:noreply,
          socket
-         |> put_flash(:info, "Login server account deleted.")
-         |> stream_delete(:accounts, account)
+         |> put_flash(:info, "Login server account unlinked.")
+         |> stream_delete(:accounts, ls)
          |> assign(:characters, ProjectZek.LoginServer.list_user_characters(socket.assigns.current_user))}
 
-      {:error, :banned} ->
-        {:noreply, put_flash(socket, :error, "Account is banned. Please contact a superadmin to remove it.")}
-
-      {:error, :unauthorized} ->
-        {:noreply, put_flash(socket, :error, "Not authorized to delete this account.")}
-
-      {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to delete account. Please try again.")}
+      _ ->
+        {:noreply, put_flash(socket, :error, "Failed to unlink account. Please try again.")}
     end
   end
+
+  # Removing LS deletion from user view; only unlink is allowed here.
 end

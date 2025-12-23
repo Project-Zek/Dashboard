@@ -62,7 +62,6 @@ defmodule ProjectZekWeb.Router do
       live "/loginserver/accounts/new", AccountLive.Index, :new
       live "/loginserver/accounts/:id", AccountLive.Show, :show
       live "/loginserver/accounts/:id/edit", AccountLive.Index, :edit
-      live "/loginserver/accounts/:id/delete", AccountLive.Index, :delete
 
       live "/characters", CharacterLive.Index, :index
       live "/characters/:id", CharacterLive.Show, :show

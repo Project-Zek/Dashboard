@@ -1,6 +1,9 @@
 defmodule ProjectZek.LoginServer.LsAccount do
   use Ecto.Schema
   import Ecto.Changeset
+  @derive {Flop.Schema,
+           filterable: [:account_name],
+           sortable: [:account_name, :last_login_date]}
 
   @primary_key false
   schema "tblLoginServerAccounts" do
@@ -15,6 +18,13 @@ defmodule ProjectZek.LoginServer.LsAccount do
     field :client_unlock, :integer, source: :client_unlock
     field :created_by, :integer, source: :created_by
     field :max_accts, :integer, source: :max_accts
+
+    # Through mapping to the web user via user_ls_accounts
+    has_one :user_ls, ProjectZek.LoginServer.UserLsAccount,
+      foreign_key: :login_server_id,
+      references: :login_server_id
+
+    has_one :user, through: [:user_ls, :user]
   end
 
   def changeset(ls_account, attrs) do

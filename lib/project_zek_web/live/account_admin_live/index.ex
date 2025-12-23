@@ -60,6 +60,19 @@ defmodule ProjectZekWeb.AccountAdminLive.Index do
   end
 
   @impl true
+  def handle_event("delete_ls", %{"id" => id}, socket) do
+    with {login_server_id, _} <- Integer.parse(to_string(id)),
+         {:ok, _} <- LoginServer.delete_ls_account(login_server_id) do
+      {:noreply,
+       socket
+       |> put_flash(:info, "Login server account deleted.")
+       |> fetch(socket.assigns.flop, %{"q" => socket.assigns.q, "status" => socket.assigns.status})}
+    else
+      _ -> {:noreply, put_flash(socket, :error, "Failed to delete LS account.")}
+    end
+  end
+
+  @impl true
   def handle_event("set_page_size", %{"page_size" => size}, socket) do
     page_size =
       case Integer.parse(to_string(size)) do
@@ -73,8 +86,8 @@ defmodule ProjectZekWeb.AccountAdminLive.Index do
 
   defp fetch(socket, flop, params) do
     {:ok, {accounts, meta}} = LoginServer.list_accounts_admin(flop, params)
-    banned_map = Map.new(accounts, fn a -> {a.id, LoginServer.account_banned?(a)} end)
-    ban_info = Map.new(accounts, fn a -> {a.id, LoginServer.ban_info(a)} end)
+    banned_map = Map.new(accounts, fn a -> {a.login_server_id, LoginServer.ls_account_banned?(a)} end)
+    ban_info = Map.new(accounts, fn a -> {a.login_server_id, LoginServer.ban_info(a)} end)
 
     assign(socket,
       accounts: accounts,
@@ -126,29 +139,29 @@ defmodule ProjectZekWeb.AccountAdminLive.Index do
                   <table class="min-w-full divide-y divide-gray-300">
                     <thead>
                       <tr>
-                        <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-0"><a href="#" phx-click="sort" phx-value-field="username">Username</a></th>
+                        <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-0"><a href="#" phx-click="sort" phx-value-field="account_name">Username</a></th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-white">Owner</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-white">Status</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-white">Reason</th>
-                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white"><a href="#" phx-click="sort" phx-value-field="last_login_at">Last login</a></th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white"><a href="#" phx-click="sort" phx-value-field="last_login_date">Last login</a></th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-white">Last IP</th>
-                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white"><a href="#" phx-click="sort" phx-value-field="inserted_at">Created</a></th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white">Actions</th>
                       </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-800">
                       <%= for account <- @accounts do %>
                         <tr>
-                          <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0"><%= account.username %></td>
+                          <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-0"><%= account.account_name %></td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.user && account.user.email %></td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                            <%= if @banned_map[account.id] do %>
+                            <%= if @banned_map[account.login_server_id] do %>
                               <span class="inline-flex items-center rounded-full bg-rose-600/20 px-2 py-0.5 text-xs font-medium text-rose-400 ring-1 ring-inset ring-rose-600/30">Banned</span>
                             <% else %>
                               <span class="inline-flex items-center rounded-full bg-emerald-600/20 px-2 py-0.5 text-xs font-medium text-emerald-400 ring-1 ring-inset ring-emerald-600/30">Active</span>
                             <% end %>
                           </td>
                           <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
-                            <%= case @ban_info[account.id] do %>
+                            <%= case @ban_info[account.login_server_id] do %>
                               <% {:ok, {:banned, reason}} -> %>
                                 <%= reason || "(no reason provided)" %>
                               <% {:ok, {:suspended, until, reason}} -> %>
@@ -157,9 +170,11 @@ defmodule ProjectZekWeb.AccountAdminLive.Index do
                                 —
                             <% end %>
                           </td>
-                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.last_login_at %></td>
-                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.last_login_ip %></td>
-                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.inserted_at %></td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.last_login_date %></td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300"><%= account.last_ip_address %></td>
+                          <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-300">
+                            <button phx-click="delete_ls" phx-value-id={account.login_server_id} data-confirm="Permanently delete this LS account? This cannot be undone." class="text-rose-400 hover:underline">Delete LS</button>
+                          </td>
                         </tr>
                       <% end %>
                     </tbody>

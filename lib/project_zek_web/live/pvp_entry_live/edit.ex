@@ -49,8 +49,8 @@ defmodule ProjectZekWeb.PvpEntryLive.Edit do
   end
 
   defp user_login_usernames(user_id) do
-    LoginServer.list_accounts_by_user_id(user_id)
-    |> Enum.map(& &1.username)
+    LoginServer.list_ls_accounts_by_user(%ProjectZek.Accounts.User{id: user_id})
+    |> Enum.map(& &1.account_name)
   end
 
   defp world_account_ids_for_usernames(usernames) do

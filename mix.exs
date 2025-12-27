@@ -65,7 +65,9 @@ defmodule ProjectZek.MixProject do
       {:waffle, "~> 1.1"},
       {:waffle_ecto, "~> 0.0.11"},
       {:mogrify, "~> 0.9"},
-      {:flop, "~> 0.25"}
+      {:flop, "~> 0.25"},
+      {:ueberauth, "~> 0.10"},
+      {:ueberauth_discord, "~> 0.6"}
     ]
   end
 

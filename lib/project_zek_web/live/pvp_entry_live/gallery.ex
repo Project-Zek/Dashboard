@@ -47,8 +47,8 @@ defmodule ProjectZekWeb.PvpEntryLive.Gallery do
   defp parse_sort("player"), do: :player
   defp parse_sort(_), do: :latest
 
-  # function head to allow default for third arg only once
-  defp list_entries(_type, _filters, screenshot_supported \\ true)
+  # function head
+  defp list_entries(_type, _filters, screenshot_supported)
 
   defp list_entries(:latest, filters, screenshot_supported) do
     base_query(filters, screenshot_supported)
@@ -71,7 +71,7 @@ defmodule ProjectZekWeb.PvpEntryLive.Gallery do
     |> decorate()
   end
 
-  defp base_query(filters \\ %{}, screenshot_supported \\ true) do
+  defp base_query(filters, screenshot_supported) do
     q =
       from e in PvpEntry,
         join: c in Character,

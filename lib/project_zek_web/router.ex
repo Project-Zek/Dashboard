@@ -17,6 +17,11 @@ defmodule ProjectZekWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # OAuth (Ueberauth) pipeline
+  pipeline :auth do
+    plug Ueberauth
+  end
+
   scope "/", ProjectZekWeb do
     pipe_through :browser
 
@@ -71,6 +76,15 @@ defmodule ProjectZekWeb.Router do
 
       # Galleries removed
     end
+  end
+
+  # Discord OAuth linking routes
+  scope "/auth", ProjectZekWeb do
+    pipe_through [:browser, :require_authenticated_user, :auth]
+
+    get "/discord", AuthController, :request
+    get "/discord/callback", AuthController, :callback
+    post "/discord/unlink", AuthController, :unlink
   end
 
   scope "/", ProjectZekWeb do

@@ -6,7 +6,7 @@ defmodule ProjectZek.LoginServer do
   alias ProjectZek.LoginServer.LsAccount
   alias ProjectZek.LoginServer.UserLsAccount
   alias ProjectZek.World.Account, as: WorldAccount
-  alias Ecto.Multi
+  # alias Ecto.Multi
 
   # New LS-centric helpers (non-breaking; used by new UI)
   def list_ls_accounts_by_user(%ProjectZek.Accounts.User{id: user_id}) do
@@ -20,7 +20,14 @@ defmodule ProjectZek.LoginServer do
     )
   end
 
+  def require_discord_for_ls? do
+    Application.get_env(:project_zek, :require_discord_for_ls, false)
+  end
+
   def create_ls_account_and_link(%ProjectZek.Accounts.User{} = user, %{"username" => username, "password" => password} = attrs) do
+    if require_discord_for_ls?() and (is_nil(user.discord_user_id) or user.discord_user_id == "") do
+      {:error, :discord_required}
+    else
     ip = Map.get(attrs, "ip") || "127.0.0.1"
     email = Map.get(attrs, "email") || user.email || "local_creation"
     salt = Application.get_env(:project_zek, :login_salt, "")
@@ -61,29 +68,10 @@ defmodule ProjectZek.LoginServer do
       {:ok, _} = Repo.insert(mapping)
       ls
     end)
-  end
-
-  def link_existing_ls_account(%ProjectZek.Accounts.User{} = user, username, password) do
-    salt = Application.get_env(:project_zek, :login_salt, "")
-    case Repo.get_by(LsAccount, account_name: username) do
-      nil -> {:error, :not_found}
-      %LsAccount{} = ls ->
-        # Verify salted hash matches DB
-        case Repo.query("SELECT SHA(CONCAT(?, ?))", [password, salt]) do
-          {:ok, %{rows: [[hash]]}} when is_binary(hash) ->
-            if String.downcase(hash) == String.downcase(ls.account_password || "") do
-              # Enforce one LS per user
-              case Repo.insert(UserLsAccount.changeset(%UserLsAccount{}, %{user_id: user.id, login_server_id: ls.login_server_id})) do
-                {:ok, _} -> {:ok, ls}
-                {:error, changeset} -> {:error, changeset}
-              end
-            else
-              {:error, :invalid_password}
-            end
-          {:error, reason} -> {:error, reason}
-        end
     end
   end
+
+  # Linking existing LS accounts is intentionally not supported.
 
   def update_ls_password(%LsAccount{} = ls, password) when is_binary(password) do
     salt = Application.get_env(:project_zek, :login_salt, "")

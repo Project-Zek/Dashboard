@@ -70,6 +70,29 @@ defmodule ProjectZekWeb.UserSettingsLive do
         </.simple_form>
       </div>
       <div>
+        <div class="mt-8 p-4 rounded-lg border border-indigo-700 bg-indigo-900/20">
+          <h2 class="text-indigo-300 font-semibold mb-2">Discord</h2>
+          <%= if @current_user.discord_user_id do %>
+            <div class="flex items-center gap-3 mb-4">
+              <%= if @current_user.discord_avatar do %>
+                <img src={@current_user.discord_avatar} alt="Discord avatar" class="h-8 w-8 rounded-full" />
+              <% end %>
+              <p class="text-sm text-gray-200">
+                Linked to Discord:
+                <strong><%= @current_user.discord_username || @current_user.discord_user_id %></strong>
+              </p>
+            </div>
+            <form action={~p"/auth/discord/unlink"} method="post">
+              <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+              <.button class="bg-rose-600 hover:bg-rose-500">Unlink Discord</.button>
+            </form>
+          <% else %>
+            <p class="text-sm text-gray-300 mb-4">Link your Discord account to access Discord-gated features.</p>
+            <a href={~p"/auth/discord"} class="inline-flex items-center rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2 px-3 text-sm font-semibold text-white">Link Discord</a>
+          <% end %>
+        </div>
+      </div>
+      <div>
         <div class="mt-8 p-4 rounded-lg border border-rose-700 bg-rose-900/20">
           <h2 class="text-rose-400 font-semibold mb-2">Delete My Account</h2>
           <p class="text-sm text-gray-300 mb-4">This will permanently delete your web account and unlink it from your login server account. Your LS account and characters remain unaffected. This action cannot be undone.</p>

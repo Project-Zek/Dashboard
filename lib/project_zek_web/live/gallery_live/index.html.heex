@@ -1,24 +1,16 @@
 <.header>
-  Listing Galleries
-  <:actions>
-    <.link patch={~p"/galleries/new"}>
-      <.button>New Gallery</.button>
-    </.link>
-  </:actions>
+  Listing Galleries (feature disabled)
 </.header>
 
 <.table
   id="galleries"
   rows={@streams.galleries}
-  row_click={fn {_id, gallery} -> JS.navigate(~p"/galleries/#{gallery}") end}
+  row_click={fn _ -> JS.push("noop") end}
 >
   <:col :let={{_id, gallery}} label="Name"><%= gallery.name %></:col>
   <:col :let={{_id, gallery}} label="Character data"><%= gallery.character_data_id %></:col>
-  <:action :let={{_id, gallery}}>
-    <div class="sr-only">
-      <.link navigate={~p"/galleries/#{gallery}"}>Show</.link>
-    </div>
-    <.link patch={~p"/galleries/#{gallery}/edit"}>Edit</.link>
+  <:action :let={{_id, _gallery}}>
+    <span class="text-gray-400 text-xs">Show/Edit disabled</span>
   </:action>
   <:action :let={{id, gallery}}>
     <.link
@@ -30,13 +22,4 @@
   </:action>
 </.table>
 
-<.modal :if={@live_action in [:new, :edit]} id="gallery-modal" show on_cancel={JS.patch(~p"/galleries")}>
-  <.live_component
-    module={ProjectZekWeb.GalleryLive.FormComponent}
-    id={@gallery.id || :new}
-    title={@page_title}
-    action={@live_action}
-    gallery={@gallery}
-    patch={~p"/galleries"}
-  />
-</.modal>
+<div class="text-gray-400 text-sm mt-4">Create/edit disabled.</div>

@@ -71,6 +71,12 @@ config :flop,
   default_limit: 25,
   max_limit: 100
 
+# Ueberauth (Discord OAuth)
+config :ueberauth, Ueberauth,
+  providers: [
+    discord: {Ueberauth.Strategy.Discord, [default_scope: "identify"]}
+  ]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

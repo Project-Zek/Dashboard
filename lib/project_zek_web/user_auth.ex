@@ -220,6 +220,7 @@ defmodule ProjectZekWeb.UserAuth do
 
       user ->
         conn
+        |> maybe_require_discord_link()
 
       true ->
         conn
@@ -227,6 +228,31 @@ defmodule ProjectZekWeb.UserAuth do
         |> maybe_store_return_to()
         |> redirect(to: ~p"/users/log_in")
         |> halt()
+    end
+  end
+
+  defp maybe_require_discord_link(conn) do
+    discord_required? = Application.get_env(:project_zek, :require_discord_on_login, false)
+    user = conn.assigns[:current_user]
+    needs_link? =
+      discord_required? and user and (is_nil(user.discord_user_id) or user.discord_user_id == "")
+
+    # Allowlist routes to avoid loops: settings + oauth endpoints
+    allowlisted? =
+      case conn.path_info do
+        ["users", "settings" | _] -> true
+        ["auth", "discord" | _] -> true
+        _ -> false
+      end
+
+    if needs_link? and not allowlisted? do
+      conn
+      |> put_flash(:error, "You must link a Discord account before continuing.")
+      |> maybe_store_return_to()
+      |> redirect(to: ~p"/users/settings")
+      |> halt()
+    else
+      conn
     end
   end
 

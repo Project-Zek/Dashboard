@@ -385,4 +385,53 @@ defmodule ProjectZek.Accounts do
       {:error, :user, changeset, _} -> {:error, changeset}
     end
   end
+
+  ## Discord linking
+
+  @doc """
+  Links a Discord account to the given user.
+
+  Expects attrs containing at least :discord_user_id. Optionally accepts
+  :discord_username and :discord_avatar. Sets :discord_linked_at.
+
+  Enforces uniqueness on :discord_user_id across all users.
+  Returns {:ok, user} on success or {:error, reason_or_changeset} on failure.
+  """
+  def link_discord(%User{} = user, attrs) when is_map(attrs) do
+    discord_user_id = Map.get(attrs, :discord_user_id) || Map.get(attrs, "discord_user_id")
+
+    cond do
+      is_nil(discord_user_id) or (is_binary(discord_user_id) and String.trim(discord_user_id) == "") ->
+        {:error, :invalid_discord_user_id}
+
+      # Already linked to a different Discord account
+      not is_nil(user.discord_user_id) and user.discord_user_id != discord_user_id ->
+        {:error, :already_linked}
+
+      true ->
+        case Repo.get_by(User, discord_user_id: discord_user_id) do
+          %User{id: other_id} when other_id != user.id ->
+            {:error, :discord_id_taken}
+
+          _ ->
+            attrs =
+              attrs
+              |> Map.put_new_lazy(:discord_linked_at, fn -> DateTime.utc_now() |> DateTime.truncate(:second) end)
+
+            user
+            |> User.discord_changeset(attrs)
+            |> Repo.update()
+        end
+    end
+  end
+
+  @doc """
+  Unlinks any Discord association from the given user.
+  Clears Discord-related fields.
+  """
+  def unlink_discord(%User{} = user) do
+    user
+    |> User.unlink_discord_changeset()
+    |> Repo.update()
+  end
 end

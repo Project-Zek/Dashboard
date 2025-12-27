@@ -1,6 +1,5 @@
 defmodule ProjectZekWeb.SuperadminAuth do
   import Phoenix.LiveView
-  import Phoenix.Component
   use ProjectZekWeb, :verified_routes
 
   def on_mount(:ensure_superadmin, _params, _session, socket) do
@@ -16,4 +15,3 @@ defmodule ProjectZekWeb.SuperadminAuth do
     end
   end
 end
-

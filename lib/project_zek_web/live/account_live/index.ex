@@ -4,7 +4,7 @@ defmodule ProjectZekWeb.AccountLive.Index do
   require Logger
 
   alias ProjectZek.LoginServer
-  alias ProjectZek.LoginServer.LsAccount
+  # alias ProjectZek.LoginServer.LsAccount
 
   @impl true
   def render(assigns) do
@@ -18,12 +18,18 @@ defmodule ProjectZekWeb.AccountLive.Index do
                 <h1 class="text-base font-semibold text-white">Server Accounts</h1>
               </div>
               <div class="mt-4 sm:mt-0">
-                <%= if !@has_account? do %>
-                  <.link patch={~p"/loginserver/accounts/new"} phx-click={JS.push_focus()}>
-                    <.button class="bg-indigo-600 hover:bg-indigo-500">New Account</.button>
-                  </.link>
-                <% else %>
-                  <span class="text-gray-400 text-sm">You already have a server account.</span>
+                <%= cond do %>
+                  <% @has_account? -> %>
+                    <span class="text-gray-400 text-sm">You already have a server account.</span>
+                  <% @discord_required? and not @discord_linked? -> %>
+                    <div class="flex items-center gap-3">
+                      <span class="text-gray-300 text-sm">Link your Discord to create a server account.</span>
+                      <a href={~p"/auth/discord"} class="rounded-lg bg-indigo-600 hover:bg-indigo-500 py-2 px-3 text-sm font-semibold text-white">Link Discord</a>
+                    </div>
+                  <% true -> %>
+                    <.link patch={~p"/loginserver/accounts/new"} phx-click={JS.push_focus()}>
+                      <.button class="bg-indigo-600 hover:bg-indigo-500">New Account</.button>
+                    </.link>
                 <% end %>
               </div>
             </div>
@@ -175,11 +181,15 @@ defmodule ProjectZekWeb.AccountLive.Index do
     ls_accounts = LoginServer.list_ls_accounts_by_user(socket.assigns.current_user)
     banned_map = Map.new(ls_accounts, fn ls -> {ls.login_server_id, LoginServer.ls_account_banned?(ls)} end)
     chars = LoginServer.list_user_characters(socket.assigns.current_user)
+    discord_required? = LoginServer.require_discord_for_ls?()
+    discord_linked? = not is_nil(socket.assigns.current_user.discord_user_id) and socket.assigns.current_user.discord_user_id != ""
 
     {:ok,
      socket
      |> assign(:request_ip, ip)
      |> assign(:has_account?, length(ls_accounts) > 0)
+     |> assign(:discord_required?, discord_required?)
+     |> assign(:discord_linked?, discord_linked?)
      |> assign(:banned_map, banned_map)
      |> assign(:characters, chars)
      |> stream(:accounts, ls_accounts)}
@@ -205,9 +215,15 @@ defmodule ProjectZekWeb.AccountLive.Index do
   end
 
   defp apply_action(socket, :new, _params) do
-    socket
-    |> assign(:page_title, "New Login Server Account")
-    |> assign(:account, %ProjectZek.LoginServer.LsAccount{})
+    if LoginServer.require_discord_for_ls?() and (is_nil(socket.assigns.current_user.discord_user_id) or socket.assigns.current_user.discord_user_id == "") do
+      socket
+      |> put_flash(:error, "You must link a Discord account before creating a server account.")
+      |> push_navigate(to: ~p"/users/settings")
+    else
+      socket
+      |> assign(:page_title, "New Login Server Account")
+      |> assign(:account, %ProjectZek.LoginServer.LsAccount{})
+    end
   end
 
   defp apply_action(socket, :index, _params) do

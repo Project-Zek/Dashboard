@@ -132,6 +132,12 @@ defmodule ProjectZekWeb.AccountLive.FormComponent do
           |> Map.put(:action, :validate)
         {:noreply, assign_form(socket, cs)}
 
+      {:error, :discord_required} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "You must link a Discord account before creating a server account.")
+         |> push_navigate(to: ~p"/users/settings")}
+
       {:error, :username_taken} ->
         cs =
           new_changeset(account_params)

@@ -9,6 +9,12 @@ defmodule ProjectZek.Accounts.User do
     field :confirmed_at, :naive_datetime
     field :banned, :boolean, default: false
 
+    # Discord linking
+    field :discord_user_id, :string
+    field :discord_username, :string
+    field :discord_avatar, :string
+    field :discord_linked_at, :utc_datetime
+
     timestamps(type: :utc_datetime)
   end
 
@@ -156,5 +162,31 @@ defmodule ProjectZek.Accounts.User do
     else
       add_error(changeset, :current_password, "is not valid")
     end
+  end
+
+  @doc """
+  A changeset for linking a Discord account to the user.
+
+  Expects at least `:discord_user_id` to be present. Optionally accepts
+  `:discord_username` and `:discord_avatar`. Sets `:discord_linked_at` when linking.
+  """
+  def discord_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:discord_user_id, :discord_username, :discord_avatar, :discord_linked_at])
+    |> validate_required([:discord_user_id])
+    |> unique_constraint(:discord_user_id)
+  end
+
+  @doc """
+  A changeset for unlinking a Discord account from the user.
+  Clears all Discord-related fields.
+  """
+  def unlink_discord_changeset(user) do
+    change(user,
+      discord_user_id: nil,
+      discord_username: nil,
+      discord_avatar: nil,
+      discord_linked_at: nil
+    )
   end
 end

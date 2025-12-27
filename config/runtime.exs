@@ -173,3 +173,65 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 end
+
+# Discord OAuth credentials (all environments) - required
+discord_client_id =
+  case System.get_env("DISCORD_CLIENT_ID") do
+    v when is_binary(v) and byte_size(String.trim(v)) > 0 -> v
+    _ ->
+      raise """
+      environment variable DISCORD_CLIENT_ID is missing or empty.
+      Create a Discord application and set DISCORD_CLIENT_ID in your env.
+      """
+  end
+
+discord_client_secret =
+  case System.get_env("DISCORD_CLIENT_SECRET") do
+    v when is_binary(v) and byte_size(String.trim(v)) > 0 -> v
+    _ ->
+      raise """
+      environment variable DISCORD_CLIENT_SECRET is missing or empty.
+      Create a Discord application and set DISCORD_CLIENT_SECRET in your env.
+      """
+  end
+
+discord_redirect_uri =
+  case System.get_env("DISCORD_REDIRECT_URI") do
+    v when is_binary(v) and byte_size(String.trim(v)) > 0 -> v
+    _ ->
+      raise """
+      environment variable DISCORD_REDIRECT_URI is missing or empty.
+      Example: https://your-domain.com/auth/discord/callback (must match Discord app).
+      """
+  end
+
+config :ueberauth, Ueberauth.Strategy.Discord.OAuth,
+  client_id: discord_client_id,
+  client_secret: discord_client_secret,
+  redirect_uri: discord_redirect_uri
+
+# Require Discord link for Login Server account creation (all envs)
+require_discord_for_ls =
+  case System.get_env("REQUIRE_DISCORD_FOR_LS") do
+    v when v in ["true", "1", "yes", "on"] -> true
+    _ -> false
+  end
+
+config :project_zek, :require_discord_for_ls, require_discord_for_ls
+
+# Site-wide Discord requirement upon login (optional)
+require_discord_on_login =
+  case System.get_env("REQUIRE_DISCORD_ON_LOGIN") do
+    v when v in ["true", "1", "yes", "on"] -> true
+    _ -> false
+  end
+
+config :project_zek, :require_discord_on_login, require_discord_on_login
+
+# Discord Bot + Guild role mapping (optional; used if role sync is enabled)
+config :project_zek, :discord,
+  bot_token: System.get_env("DISCORD_BOT_TOKEN"),
+  guild_id: System.get_env("DISCORD_GUILD_ID"),
+  role_evil_id: System.get_env("DISCORD_ROLE_EVIL_ID"),
+  role_good_id: System.get_env("DISCORD_ROLE_GOOD_ID"),
+  role_neutral_id: System.get_env("DISCORD_ROLE_NEUTRAL_ID")
